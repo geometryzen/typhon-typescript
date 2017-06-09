@@ -1,0 +1,62 @@
+{
+    "name": "typhon-typescript",
+    "version": "0.1.0",
+    "description": "Typhon to TypeScript transpiler.",
+    "author": {
+        "name": "David Geo Holmes",
+        "email": "david.geo.holmes@gmail.com"
+    },
+    "browser": "./build/browser/index.js",
+    "main": "./build/main/index.js",
+    "module": "./build/module/index.js",
+    "types": "./build/main/index.d.ts",
+    "license": "MIT",
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "http://github.com/geometryzen/typhon-typescript/blob/master/LICENSE"
+        }
+    ],
+    "keywords": [],
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/geometryzen/typhon-typescript.git"
+    },
+    "dependencies": {
+        "code-writer": "^0.1.2",
+        "generic-rbtree": "^1.1.1",
+        "typhon-lang": "^0.10.7"
+    },
+    "scripts": {
+        "build": "trash build tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",
+        "build:browser": "rollup --config rollup.config.js --format umd --name 'typhon' --output build/browser/index.js && sorcery -i build/browser/index.js && cp src/index.d.ts build/browser",
+        "lint": "tslint src/**/*.ts",
+        "test": "yarn lint && yarn unit && nyc check-coverage --lines 40 --functions 30 --branches 20",
+        "unit": "trash test && tsc -p tsconfig.json && karma start",
+        "watch": "concurrently -r --kill-others 'tsc -p tsconfig.json -w' 'karma start'"
+    },
+    "devDependencies": {
+        "@types/jasmine": "^2.5.51",
+        "concurrently": "^3.4.0",
+        "jasmine-core": "^2.6.3",
+        "karma": "^1.7.0",
+        "karma-chrome-launcher": "^2.1.1",
+        "karma-cli": "^1.0.1",
+        "karma-coverage": "^1.1.1",
+        "karma-jasmine": "^1.1.0",
+        "karma-jasmine-html-reporter": "^0.2.2",
+        "karma-phantomjs-launcher": "^1.0.4",
+        "rollup": "^0.42.0",
+        "rollup-plugin-alias": "^1.3.1",
+        "rollup-plugin-commonjs": "^8.0.2",
+        "rollup-plugin-node-resolve": "^3.0.0",
+        "rollup-watch": "^4.0.0",
+        "sorcery": "^0.10.0",
+        "systemjs": "^0.19.41",
+        "trash-cli": "^1.4.0",
+        "tslib": "^1.7.1",
+        "tslint": "^5.4.3",
+        "tslint-config-standard": "^5.0.2",
+        "typescript": "^2.3.3"
+    }
+}

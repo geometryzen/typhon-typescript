@@ -1,0 +1,18 @@
+.nyc_output
+.vscode
+
+coverage/
+
+# Ignore tools dependencies
+node_modules/
+
+test/
+
+# Ignore this log file which makes an appearance due to Google Chrome being used to inspect the Jasmine results.
+libpeerconnection.log
+
+# Ignore iOS junk.
+.DS_Store
+
+# Ignore compiled Python files.
+**/*.pyc
