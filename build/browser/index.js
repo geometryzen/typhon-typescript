@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('typhon-lang'), require('code-writer'), require('generic-rbtree')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'typhon-lang', 'code-writer', 'generic-rbtree'], factory) :
-	(factory((global[''typhon''] = global[''typhon''] || {}),global.typhonLang,global.codeWriter,global.genericRbtree));
+	(factory((global.typhonTypescript = global.typhonTypescript || {}),global.typhonLang,global.codeWriter,global.genericRbtree));
 }(this, (function (exports,typhonLang,codeWriter,genericRbtree) { 'use strict';
 
 /**

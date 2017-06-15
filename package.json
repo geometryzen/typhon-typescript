@@ -1,6 +1,6 @@
 {
     "name": "typhon-typescript",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": "Typhon to TypeScript transpiler.",
     "author": {
         "name": "David Geo Holmes",
@@ -29,7 +29,7 @@
     },
     "scripts": {
         "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",
-        "build:browser": "rollup --config rollup.config.js --format umd --name 'typhon' --output build/browser/index.js && sorcery -i build/browser/index.js",
+        "build:browser": "rollup --config rollup.config.js --format umd --name \"typhonTypescript\" --output build/browser/index.js && sorcery -i build/browser/index.js",
         "lint": "tslint src/**/*.ts",
         "test": "yarn lint && yarn unit && nyc check-coverage --lines 40 --functions 30 --branches 20",
         "unit": "trash test && tsc -p tsconfig.json && karma start",
