@@ -1,15 +1,13 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('typhon-lang'), require('code-writer'), require('generic-rbtree')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'typhon-lang', 'code-writer', 'generic-rbtree'], factory) :
-	(factory((global.typhon = global.typhon || {}),global.typhonLang,global.codeWriter,global.genericRbtree));
+	(factory((global[''typhon''] = global[''typhon''] || {}),global.typhonLang,global.codeWriter,global.genericRbtree));
 }(this, (function (exports,typhonLang,codeWriter,genericRbtree) { 'use strict';
 
 /**
  * We're looking for something that is truthy, not just true.
  */
-/**
- * We're looking for something that is truthy, not just true.
- */ function assert(condition, message) {
+function assert(condition, message) {
     if (!condition) {
         throw new Error(message);
     }
@@ -19,10 +17,7 @@
  * FIXME: Argument should be declared as string but not allowed by TypeScript compiler.
  * May be a bug when comparing to 0x7f below.
  */
-/**
- * FIXME: Argument should be declared as string but not allowed by TypeScript compiler.
- * May be a bug when comparing to 0x7f below.
- */ function toStringLiteralJS(value) {
+function toStringLiteralJS(value) {
     // single is preferred
     var quote = "'";
     if (value.indexOf("'") !== -1 && value.indexOf('"') === -1) {
@@ -484,6 +479,7 @@ var Printer = (function () {
     };
     Printer.prototype.functionDef = function (functionDef) {
         var isClassMethod = isMethod(functionDef);
+        this.writer.write("export ", null);
         if (!isClassMethod) {
             this.writer.write("function ", null);
         }
@@ -504,6 +500,10 @@ var Printer = (function () {
             }
         }
         this.writer.closeParen();
+        if (functionDef.returnType) {
+            this.writer.write(":", null);
+            functionDef.returnType.accept(this);
+        }
         this.writer.beginBlock();
         for (var _i = 0, _a = functionDef.body; _i < _a.length; _i++) {
             var stmt = _a[_i];
@@ -579,6 +579,14 @@ var Printer = (function () {
             }
             case 'False': {
                 this.writer.name('false', range);
+                break;
+            }
+            case 'str': {
+                this.writer.name('string', range);
+                break;
+            }
+            case 'bool': {
+                this.writer.name('boolean', range);
                 break;
             }
             default: {

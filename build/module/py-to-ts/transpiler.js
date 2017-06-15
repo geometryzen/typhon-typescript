@@ -368,6 +368,7 @@ var Printer = (function () {
     };
     Printer.prototype.functionDef = function (functionDef) {
         var isClassMethod = isMethod(functionDef);
+        this.writer.write("export ", null);
         if (!isClassMethod) {
             this.writer.write("function ", null);
         }
@@ -388,6 +389,10 @@ var Printer = (function () {
             }
         }
         this.writer.closeParen();
+        if (functionDef.returnType) {
+            this.writer.write(":", null);
+            functionDef.returnType.accept(this);
+        }
         this.writer.beginBlock();
         for (var _i = 0, _a = functionDef.body; _i < _a.length; _i++) {
             var stmt = _a[_i];
@@ -463,6 +468,14 @@ var Printer = (function () {
             }
             case 'False': {
                 this.writer.name('false', range);
+                break;
+            }
+            case 'str': {
+                this.writer.name('string', range);
+                break;
+            }
+            case 'bool': {
+                this.writer.name('boolean', range);
                 break;
             }
             default: {

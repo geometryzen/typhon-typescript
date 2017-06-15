@@ -1,6 +1,6 @@
 {
     "name": "typhon-typescript",
-    "version": "0.1.1",
+    "version": "0.2.1",
     "description": "Typhon to TypeScript transpiler.",
     "author": {
         "name": "David Geo Holmes",
@@ -25,18 +25,18 @@
     "dependencies": {
         "code-writer": "^0.1.2",
         "generic-rbtree": "^1.1.1",
-        "typhon-lang": "^0.10.7"
+        "typhon-lang": "^0.11.1"
     },
     "scripts": {
         "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",
-        "build:browser": "rollup --config rollup.config.js --format umd --name 'typhon' --output build/browser/index.js && sorcery -i build/browser/index.js && cp src/index.d.ts build/browser",
+        "build:browser": "rollup --config rollup.config.js --format umd --name 'typhon' --output build/browser/index.js && sorcery -i build/browser/index.js",
         "lint": "tslint src/**/*.ts",
         "test": "yarn lint && yarn unit && nyc check-coverage --lines 40 --functions 30 --branches 20",
         "unit": "trash test && tsc -p tsconfig.json && karma start",
-        "watch": "concurrently -r --kill-others 'tsc -p tsconfig.json -w' 'karma start'"
+        "watch": "concurrently -r --kill-others \"tsc -p tsconfig.json -w\" \"karma start\""
     },
     "devDependencies": {
-        "@types/jasmine": "^2.5.51",
+        "@types/jasmine": "^2.5.52",
         "concurrently": "^3.4.0",
         "jasmine-core": "^2.6.3",
         "karma": "^1.7.0",
@@ -57,6 +57,6 @@
         "tslib": "^1.7.1",
         "tslint": "^5.4.3",
         "tslint-config-standard": "^5.0.2",
-        "typescript": "^2.3.3"
+        "typescript": "^2.4.0"
     }
 }

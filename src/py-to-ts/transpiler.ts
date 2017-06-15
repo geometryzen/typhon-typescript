@@ -482,6 +482,7 @@ class Printer implements Visitor {
     }
     functionDef(functionDef: FunctionDef): void {
         const isClassMethod = isMethod(functionDef);
+        this.writer.write("export ", null);
         if (!isClassMethod) {
             this.writer.write("function ", null);
         }
@@ -489,6 +490,7 @@ class Printer implements Visitor {
         this.writer.openParen();
         for (let i = 0; i < functionDef.args.args.length; i++) {
             const arg = functionDef.args.args[i];
+
             if (i === 0) {
                 if (arg.id.value === 'self') {
                     // Ignore.
@@ -502,7 +504,14 @@ class Printer implements Visitor {
             }
         }
         this.writer.closeParen();
+        if (functionDef.returnType) {
+            this.writer.write(":", null);
+            functionDef.returnType.accept(this);
+        }
+
+
         this.writer.beginBlock();
+
         for (const stmt of functionDef.body) {
             stmt.accept(this);
         }
@@ -574,6 +583,14 @@ class Printer implements Visitor {
             }
             case 'False': {
                 this.writer.name('false', range);
+                break;
+            }
+            case 'str': {
+                this.writer.name('string', range);
+                break;
+            }
+            case 'bool': {
+                this.writer.name('boolean', range);
                 break;
             }
             default: {

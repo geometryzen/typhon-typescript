@@ -237,7 +237,7 @@ describe('transpiler', function () {
             ].join("\n");
             */
             // console.lg(dumpSymbolTable(result.symbolTable));
-            expect(result.code).toBe("class MyClass{f(name){return 'Hello'+name;}}");
+            expect(result.code).toBe("class MyClass{export f(name){return 'Hello'+name;}}");
             // console.lg(JSON.stringify(result.sourceMap, null, 2));
         });
     });
@@ -261,7 +261,15 @@ describe('transpiler', function () {
                 "    return 'Hello' + name"
             ].join("\n");
             const result = compile(sourceText);
-            expect(result.code).toBe("function greeting(name){return 'Hello'+name;}");
+            expect(result.code).toBe("export function greeting(name){return 'Hello'+name;}");
+        });
+        it("should work with a type", function() {
+            const sourceText = [
+                "def greeting(name) -> str:",
+                "   return 'Hello' + name"
+            ].join("\n");
+            const result = compile(sourceText);
+            expect(result.code).toBe("export function greeting(name):string{return 'Hello'+name;}");
         });
     });
 
@@ -452,7 +460,7 @@ describe('transpiler', function () {
                 "trackball.subscribe(engine.canvas);",
                 "let box=new Box(engine,{color:Color.red});",
                 "scene.add(box);",
-                "function animate(timestamp){",
+                "export function animate(timestamp){",
                 "engine.clear();",
                 "trackball.update();",
                 "dirLight.direction.copyVector(camera.look).subVector(camera.eye);",
