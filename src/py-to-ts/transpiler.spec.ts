@@ -252,6 +252,15 @@ describe('transpiler', function () {
             expect(result.code).toBe("{'a':1,'b':23,'c':'eggs'};");
             // console.lg(JSON.stringify(result.sourceMap, null, 2));
         });
+
+        it("Should convert kwargs into a single map argument", function () {
+            const sourceText = [
+                "foo({test:4},one=1, two=2, three=3)",
+                ""
+            ].join("\n");
+            const result = compile(sourceText);
+            expect(result.code).toBe("foo({test:4},{one:1,two:2,three:3});");
+        })
     });
 
     describe('FunctionDef', function () {
@@ -263,7 +272,7 @@ describe('transpiler', function () {
             const result = compile(sourceText);
             expect(result.code).toBe("export function greeting(name){return 'Hello'+name;}");
         });
-        it("should work with a type", function() {
+        it("should work with a type", function () {
             const sourceText = [
                 "def greeting(name) -> str:",
                 "   return 'Hello' + name"
@@ -271,6 +280,7 @@ describe('transpiler', function () {
             const result = compile(sourceText);
             expect(result.code).toBe("export function greeting(name):string{return 'Hello'+name;}");
         });
+
     });
 
     describe('IfStatement', function () {

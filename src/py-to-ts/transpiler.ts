@@ -490,7 +490,6 @@ class Printer implements Visitor {
         this.writer.openParen();
         for (let i = 0; i < functionDef.args.args.length; i++) {
             const arg = functionDef.args.args[i];
-
             if (i === 0) {
                 if (arg.id.value === 'self') {
                     // Ignore.

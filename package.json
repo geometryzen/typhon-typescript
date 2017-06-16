@@ -1,6 +1,6 @@
 {
     "name": "typhon-typescript",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "description": "Typhon to TypeScript transpiler.",
     "author": {
         "name": "David Geo Holmes",
