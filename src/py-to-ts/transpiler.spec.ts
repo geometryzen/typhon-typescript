@@ -260,7 +260,7 @@ describe('transpiler', function () {
             ].join("\n");
             const result = compile(sourceText);
             expect(result.code).toBe("foo({test:4},{one:1,two:2,three:3});");
-        })
+        });
     });
 
     describe('FunctionDef', function () {
