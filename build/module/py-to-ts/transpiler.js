@@ -368,7 +368,10 @@ var Printer = (function () {
     };
     Printer.prototype.functionDef = function (functionDef) {
         var isClassMethod = isMethod(functionDef);
-        this.writer.write("export ", null);
+        var sts = this.st.getStsForAst(functionDef);
+        if (!sts.isNested) {
+            this.writer.write("export ", null);
+        }
         if (!isClassMethod) {
             this.writer.write("function ", null);
         }

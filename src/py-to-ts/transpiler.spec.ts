@@ -224,7 +224,8 @@ describe('transpiler', function () {
             const sourceText = [
                 "class MyClass:",
                 "    def f(self, name):",
-                "        return 'Hello' + name"
+                "        def a(asdf):",
+                "           return 'Hello' + name"
             ].join("\n");
             const result = compile(sourceText);
             /*
@@ -237,11 +238,27 @@ describe('transpiler', function () {
             ].join("\n");
             */
             // console.lg(dumpSymbolTable(result.symbolTable));
-            expect(result.code).toBe("class MyClass{export f(name){return 'Hello'+name;}}");
+            expect(result.code).toBe("class MyClass{f(name){function a(asdf){return 'Hello'+name;}}}");
             // console.lg(JSON.stringify(result.sourceMap, null, 2));
         });
     });
+/*
+    class MyClass {
+        export f(name) {
+            function a (asdf) {
+                return 'Hello' + name;
+            }
+        }
+    }
 
+    class test {
+        f(name: any) {
+            function a(asdf: any) {
+                return 'Hello' + name;
+            }
+        }
+    }
+*/
     describe('Dict', function () {
         it('should allow the empty dictionary', function () {
             const result = compile('{}');

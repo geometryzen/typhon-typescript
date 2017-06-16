@@ -482,7 +482,13 @@ class Printer implements Visitor {
     }
     functionDef(functionDef: FunctionDef): void {
         const isClassMethod = isMethod(functionDef);
-        this.writer.write("export ", null);
+        const sts = this.st.getStsForAst(functionDef);
+        const parentScope = this.u.ste;
+        for (const scope of parentScope.children) {
+            if (sts === scope) {
+                this.writer.write("export ", null);
+            }
+        }
         if (!isClassMethod) {
             this.writer.write("function ", null);
         }
