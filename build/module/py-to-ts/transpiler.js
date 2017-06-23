@@ -1,6 +1,7 @@
 import { assert } from './asserts';
 import { Attribute } from 'typhon-lang';
 import { Add, Sub, Mult, Div, BitOr, BitXor, BitAnd, LShift, RShift, FloorDiv, Mod } from 'typhon-lang';
+import { Call } from 'typhon-lang';
 import { Eq, NotEq, Gt, GtE, Lt, LtE, In, NotIn, Is, IsNot } from 'typhon-lang';
 import { Name } from 'typhon-lang';
 import { Module } from 'typhon-lang';
@@ -136,6 +137,73 @@ var Printer = (function () {
             this.u.activateScope();
         }
     };
+    Printer.prototype.forStatement = function (fs) {
+        var body = fs.body;
+        var range = fs.iter;
+        var target = fs.target;
+        this.writer.write("for", null);
+        this.writer.openParen();
+        console.log(range);
+        this.writer.beginStatement();
+        if (target instanceof Name) {
+            var flags = this.u.ste.symFlags[target.id.value];
+            if (flags && DEF_LOCAL) {
+                if (this.u.declared[target.id.value]) {
+                    // The variable has already been declared.
+                }
+                else {
+                    // We use let for now because we would need to look ahead for more assignments.
+                    // The smenatic analysis could count the number of assignments in the current scope?
+                    this.writer.write("let ", null);
+                    this.u.declared[target.id.value] = true;
+                }
+            }
+        }
+        target.accept(this);
+        this.writer.write("=", null);
+        if (range instanceof Call) {
+            var secondArg = range.args[1];
+            var thirdArg = range.args[2];
+            // range() accepts 1 or 2 parameters, if 1 then first param is always 0
+            if (secondArg) {
+                var firstArg = range.args[0];
+                firstArg.accept(this);
+                this.writer.endStatement();
+            }
+            else {
+                this.writer.write("0", null);
+                this.writer.endStatement();
+            }
+            // writing second part of for statement
+            this.writer.beginStatement();
+            target.accept(this);
+            this.writer.write("<", null);
+            secondArg.accept(this);
+            this.writer.endStatement();
+            // writing third part of for statement
+            if (thirdArg) {
+                target.accept(this);
+                this.writer.write("=", null);
+                target.accept(this);
+                this.writer.write("+", null);
+                thirdArg.accept(this);
+            }
+            else {
+                target.accept(this);
+                this.writer.write("++", null);
+            }
+        }
+        else {
+            throw new Error("Invalid range");
+        }
+        this.writer.closeParen();
+        this.writer.beginBlock();
+        for (var _i = 0, body_1 = body; _i < body_1.length; _i++) {
+            var stmt = body_1[_i];
+            stmt.accept(this);
+        }
+        this.writer.endBlock();
+    };
     /**
      * Generates a unique symbol name for the provided namespace.
      */
@@ -150,6 +218,9 @@ var Printer = (function () {
         this.writer.beginStatement();
         // TODO: Declaration.
         // TODO: How to deal with multiple target?
+        /**
+         * Decides whether to write let or not
+         */
         for (var _i = 0, _a = assign.targets; _i < _a.length; _i++) {
             var target = _a[_i];
             if (target instanceof Name) {
@@ -167,6 +238,10 @@ var Printer = (function () {
                 }
             }
             target.accept(this);
+            if (assign.type) {
+                this.writer.write(":", null);
+                assign.type.accept(this);
+            }
         }
         this.writer.assign("=", assign.eqRange);
         assign.value.accept(this);
@@ -369,8 +444,12 @@ var Printer = (function () {
     Printer.prototype.functionDef = function (functionDef) {
         var isClassMethod = isMethod(functionDef);
         var sts = this.st.getStsForAst(functionDef);
-        if (!sts.isNested) {
-            this.writer.write("export ", null);
+        var parentScope = this.u.ste;
+        for (var _i = 0, _a = parentScope.children; _i < _a.length; _i++) {
+            var scope = _a[_i];
+            if (sts === scope) {
+                this.writer.write("export ", null);
+            }
         }
         if (!isClassMethod) {
             this.writer.write("function ", null);
@@ -379,16 +458,25 @@ var Printer = (function () {
         this.writer.openParen();
         for (var i = 0; i < functionDef.args.args.length; i++) {
             var arg = functionDef.args.args[i];
+            var argType = arg.type;
             if (i === 0) {
-                if (arg.id.value === 'self') {
+                if (arg.name.id.value === 'self') {
                     // Ignore.
                 }
                 else {
-                    arg.accept(this);
+                    arg.name.accept(this);
+                    if (argType) {
+                        this.writer.write(":", null);
+                        argType.accept(this);
+                    }
                 }
             }
             else {
-                arg.accept(this);
+                arg.name.accept(this);
+                if (argType) {
+                    this.writer.write(":", null);
+                    argType.accept(this);
+                }
             }
         }
         this.writer.closeParen();
@@ -397,8 +485,8 @@ var Printer = (function () {
             functionDef.returnType.accept(this);
         }
         this.writer.beginBlock();
-        for (var _i = 0, _a = functionDef.body; _i < _a.length; _i++) {
-            var stmt = _a[_i];
+        for (var _b = 0, _c = functionDef.body; _b < _c.length; _b++) {
+            var stmt = _c[_b];
             stmt.accept(this);
         }
         this.writer.endBlock();
@@ -475,6 +563,15 @@ var Printer = (function () {
             }
             case 'str': {
                 this.writer.name('string', range);
+                break;
+            }
+            case 'num': {
+                this.writer.name('number', range);
+                break;
+            }
+            case 'dict': {
+                var testDict = "(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})";
+                this.writer.name("" + testDict, range);
                 break;
             }
             case 'bool': {
@@ -560,3 +657,4 @@ function mappingTreeToSourceMap(mappingTree, trace) {
     }
     return new SourceMap(sourceToTarget, targetToSource);
 }
+//# sourceMappingURL=transpiler.js.map

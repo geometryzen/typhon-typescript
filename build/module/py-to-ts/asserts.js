@@ -9,3 +9,4 @@ export function assert(condition, message) {
 export function fail(message) {
     assert(false, message);
 }
+//# sourceMappingURL=asserts.js.map

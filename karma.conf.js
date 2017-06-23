@@ -37,6 +37,7 @@ module.exports = function (config) {
             'karma-test-shim.js',
 
             { pattern: 'test/**/*.js', included: false, watched: true },
+            { pattern: 'test/**/*.js.map', included: false, watched: true },
 
             // Karma will load these under /base/node_modules/...
             { pattern: 'node_modules/code-writer/build/browser/index.js', included: false, watched: false },

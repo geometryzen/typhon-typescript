@@ -30,7 +30,7 @@ export function isMethod(functionDef: FunctionDef): boolean {
     for (let i = 0; i < functionDef.args.args.length; i++) {
         if (i === 0) {
             const arg = functionDef.args.args[i];
-            if (arg.id.value === 'self') {
+            if (arg.name.id.value === 'self') {
                 return true;
             }
         }

@@ -4,3 +4,4 @@ var transpiler_1 = require("./py-to-ts/transpiler");
 exports.transpileModule = transpiler_1.transpileModule;
 var SourceMap_1 = require("./py-to-ts/SourceMap");
 exports.SourceMap = SourceMap_1.SourceMap;
+//# sourceMappingURL=index.js.map

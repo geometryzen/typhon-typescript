@@ -9,8 +9,9 @@ var typhon_lang_5 = require("typhon-lang");
 var typhon_lang_6 = require("typhon-lang");
 var typhon_lang_7 = require("typhon-lang");
 var typhon_lang_8 = require("typhon-lang");
-var toStringLiteralJS_1 = require("./toStringLiteralJS");
 var typhon_lang_9 = require("typhon-lang");
+var toStringLiteralJS_1 = require("./toStringLiteralJS");
+var typhon_lang_10 = require("typhon-lang");
 var utils_1 = require("./utils");
 var code_writer_1 = require("code-writer");
 var code_writer_2 = require("code-writer");
@@ -138,6 +139,73 @@ var Printer = (function () {
             this.u.activateScope();
         }
     };
+    Printer.prototype.forStatement = function (fs) {
+        var body = fs.body;
+        var range = fs.iter;
+        var target = fs.target;
+        this.writer.write("for", null);
+        this.writer.openParen();
+        console.log(range);
+        this.writer.beginStatement();
+        if (target instanceof typhon_lang_5.Name) {
+            var flags = this.u.ste.symFlags[target.id.value];
+            if (flags && typhon_lang_10.DEF_LOCAL) {
+                if (this.u.declared[target.id.value]) {
+                    // The variable has already been declared.
+                }
+                else {
+                    // We use let for now because we would need to look ahead for more assignments.
+                    // The smenatic analysis could count the number of assignments in the current scope?
+                    this.writer.write("let ", null);
+                    this.u.declared[target.id.value] = true;
+                }
+            }
+        }
+        target.accept(this);
+        this.writer.write("=", null);
+        if (range instanceof typhon_lang_3.Call) {
+            var secondArg = range.args[1];
+            var thirdArg = range.args[2];
+            // range() accepts 1 or 2 parameters, if 1 then first param is always 0
+            if (secondArg) {
+                var firstArg = range.args[0];
+                firstArg.accept(this);
+                this.writer.endStatement();
+            }
+            else {
+                this.writer.write("0", null);
+                this.writer.endStatement();
+            }
+            // writing second part of for statement
+            this.writer.beginStatement();
+            target.accept(this);
+            this.writer.write("<", null);
+            secondArg.accept(this);
+            this.writer.endStatement();
+            // writing third part of for statement
+            if (thirdArg) {
+                target.accept(this);
+                this.writer.write("=", null);
+                target.accept(this);
+                this.writer.write("+", null);
+                thirdArg.accept(this);
+            }
+            else {
+                target.accept(this);
+                this.writer.write("++", null);
+            }
+        }
+        else {
+            throw new Error("Invalid range");
+        }
+        this.writer.closeParen();
+        this.writer.beginBlock();
+        for (var _i = 0, body_1 = body; _i < body_1.length; _i++) {
+            var stmt = body_1[_i];
+            stmt.accept(this);
+        }
+        this.writer.endBlock();
+    };
     /**
      * Generates a unique symbol name for the provided namespace.
      */
@@ -152,11 +220,14 @@ var Printer = (function () {
         this.writer.beginStatement();
         // TODO: Declaration.
         // TODO: How to deal with multiple target?
+        /**
+         * Decides whether to write let or not
+         */
         for (var _i = 0, _a = assign.targets; _i < _a.length; _i++) {
             var target = _a[_i];
-            if (target instanceof typhon_lang_4.Name) {
+            if (target instanceof typhon_lang_5.Name) {
                 var flags = this.u.ste.symFlags[target.id.value];
-                if (flags && typhon_lang_9.DEF_LOCAL) {
+                if (flags && typhon_lang_10.DEF_LOCAL) {
                     if (this.u.declared[target.id.value]) {
                         // The variable has already been declared.
                     }
@@ -169,6 +240,10 @@ var Printer = (function () {
                 }
             }
             target.accept(this);
+            if (assign.type) {
+                this.writer.write(":", null);
+                assign.type.accept(this);
+            }
         }
         this.writer.assign("=", assign.eqRange);
         assign.value.accept(this);
@@ -237,7 +312,7 @@ var Printer = (function () {
         be.rhs.accept(this);
     };
     Printer.prototype.callExpression = function (ce) {
-        if (ce.func instanceof typhon_lang_4.Name) {
+        if (ce.func instanceof typhon_lang_5.Name) {
             if (utils_1.isClassNameByConvention(ce.func)) {
                 this.writer.write("new ", null);
             }
@@ -298,43 +373,43 @@ var Printer = (function () {
         for (var _i = 0, _a = ce.ops; _i < _a.length; _i++) {
             var op = _a[_i];
             switch (op) {
-                case typhon_lang_3.Eq: {
+                case typhon_lang_4.Eq: {
                     this.writer.write("===", null);
                     break;
                 }
-                case typhon_lang_3.NotEq: {
+                case typhon_lang_4.NotEq: {
                     this.writer.write("!==", null);
                     break;
                 }
-                case typhon_lang_3.Lt: {
+                case typhon_lang_4.Lt: {
                     this.writer.write("<", null);
                     break;
                 }
-                case typhon_lang_3.LtE: {
+                case typhon_lang_4.LtE: {
                     this.writer.write("<=", null);
                     break;
                 }
-                case typhon_lang_3.Gt: {
+                case typhon_lang_4.Gt: {
                     this.writer.write(">", null);
                     break;
                 }
-                case typhon_lang_3.GtE: {
+                case typhon_lang_4.GtE: {
                     this.writer.write(">=", null);
                     break;
                 }
-                case typhon_lang_3.Is: {
+                case typhon_lang_4.Is: {
                     this.writer.write("===", null);
                     break;
                 }
-                case typhon_lang_3.IsNot: {
+                case typhon_lang_4.IsNot: {
                     this.writer.write("!==", null);
                     break;
                 }
-                case typhon_lang_3.In: {
+                case typhon_lang_4.In: {
                     this.writer.write(" in ", null);
                     break;
                 }
-                case typhon_lang_3.NotIn: {
+                case typhon_lang_4.NotIn: {
                     this.writer.write(" not in ", null);
                     break;
                 }
@@ -371,8 +446,12 @@ var Printer = (function () {
     Printer.prototype.functionDef = function (functionDef) {
         var isClassMethod = utils_1.isMethod(functionDef);
         var sts = this.st.getStsForAst(functionDef);
-        if (!sts.isNested) {
-            this.writer.write("export ", null);
+        var parentScope = this.u.ste;
+        for (var _i = 0, _a = parentScope.children; _i < _a.length; _i++) {
+            var scope = _a[_i];
+            if (sts === scope) {
+                this.writer.write("export ", null);
+            }
         }
         if (!isClassMethod) {
             this.writer.write("function ", null);
@@ -381,16 +460,25 @@ var Printer = (function () {
         this.writer.openParen();
         for (var i = 0; i < functionDef.args.args.length; i++) {
             var arg = functionDef.args.args[i];
+            var argType = arg.type;
             if (i === 0) {
-                if (arg.id.value === 'self') {
+                if (arg.name.id.value === 'self') {
                     // Ignore.
                 }
                 else {
-                    arg.accept(this);
+                    arg.name.accept(this);
+                    if (argType) {
+                        this.writer.write(":", null);
+                        argType.accept(this);
+                    }
                 }
             }
             else {
-                arg.accept(this);
+                arg.name.accept(this);
+                if (argType) {
+                    this.writer.write(":", null);
+                    argType.accept(this);
+                }
             }
         }
         this.writer.closeParen();
@@ -399,8 +487,8 @@ var Printer = (function () {
             functionDef.returnType.accept(this);
         }
         this.writer.beginBlock();
-        for (var _i = 0, _a = functionDef.body; _i < _a.length; _i++) {
-            var stmt = _a[_i];
+        for (var _b = 0, _c = functionDef.body; _b < _c.length; _b++) {
+            var stmt = _c[_b];
             stmt.accept(this);
         }
         this.writer.endBlock();
@@ -479,6 +567,15 @@ var Printer = (function () {
                 this.writer.name('string', range);
                 break;
             }
+            case 'num': {
+                this.writer.name('number', range);
+                break;
+            }
+            case 'dict': {
+                var testDict = "(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})";
+                this.writer.name("" + testDict, range);
+                break;
+            }
             case 'bool': {
                 this.writer.name('boolean', range);
                 break;
@@ -521,11 +618,11 @@ var Printer = (function () {
 }());
 function transpileModule(sourceText, trace) {
     if (trace === void 0) { trace = false; }
-    var cst = typhon_lang_6.parse(sourceText, typhon_lang_6.SourceKind.File);
+    var cst = typhon_lang_7.parse(sourceText, typhon_lang_7.SourceKind.File);
     if (typeof cst === 'object') {
-        var stmts = typhon_lang_7.astFromParse(cst);
-        var mod = new typhon_lang_5.Module(stmts);
-        var symbolTable = typhon_lang_8.semanticsOfModule(mod);
+        var stmts = typhon_lang_8.astFromParse(cst);
+        var mod = new typhon_lang_6.Module(stmts);
+        var symbolTable = typhon_lang_9.semanticsOfModule(mod);
         var printer = new Printer(symbolTable, 0, sourceText, 1, 0, trace);
         var textAndMappings = printer.transpileModule(mod);
         var code = textAndMappings.text;
@@ -563,3 +660,4 @@ function mappingTreeToSourceMap(mappingTree, trace) {
     }
     return new SourceMap_1.SourceMap(sourceToTarget, targetToSource);
 }
+//# sourceMappingURL=transpiler.js.map

@@ -8,6 +8,7 @@ import { ClassDef } from 'typhon-lang';
 import { Compare, Eq, NotEq, Gt, GtE, Lt, LtE, In, NotIn, Is, IsNot } from 'typhon-lang';
 import { Dict } from 'typhon-lang';
 import { ExpressionStatement } from 'typhon-lang';
+import { ForStatement } from 'typhon-lang';
 import { FunctionDef } from 'typhon-lang';
 import { Name } from 'typhon-lang';
 import { IfStatement } from 'typhon-lang';
@@ -32,7 +33,6 @@ import { MappingTree } from 'code-writer';
 import { Position, positionComparator } from 'code-writer';
 import { RBTree } from 'generic-rbtree';
 import { SourceMap } from './SourceMap';
-
 /**
  * Provides enhanced scope information beyond the SymbolTableScope.
  */
@@ -253,6 +253,81 @@ class Printer implements Visitor {
         }
     }
 
+    forStatement(fs: ForStatement) {
+        const body = fs.body;
+        const range = fs.iter;
+        const target = fs.target;
+        this.writer.write("for", null);
+        this.writer.openParen();
+        console.log(range);
+
+        this.writer.beginStatement();
+
+        if (target instanceof Name) {
+            const flags: SymbolFlags = this.u.ste.symFlags[target.id.value];
+            if (flags && DEF_LOCAL) {
+                if (this.u.declared[target.id.value]) {
+                    // The variable has already been declared.
+                }
+                else {
+                    // We use let for now because we would need to look ahead for more assignments.
+                    // The smenatic analysis could count the number of assignments in the current scope?
+                    this.writer.write("let ", null);
+                    this.u.declared[target.id.value] = true;
+                }
+            }
+        }
+        target.accept(this);
+
+        this.writer.write("=", null);
+
+        if (range instanceof Call) {
+            const secondArg = range.args[1];
+            const thirdArg = range.args[2];
+            // range() accepts 1 or 2 parameters, if 1 then first param is always 0
+            if (secondArg) {
+                const firstArg = range.args[0];
+                firstArg.accept(this);
+                this.writer.endStatement();
+            }
+            else {
+                this.writer.write("0", null);
+                this.writer.endStatement();
+            }
+
+            // writing second part of for statement
+            this.writer.beginStatement();
+            target.accept(this);
+            this.writer.write("<", null);
+            secondArg.accept(this);
+            this.writer.endStatement();
+
+            // writing third part of for statement
+            if (thirdArg) {
+                target.accept(this);
+                this.writer.write("=", null);
+                target.accept(this);
+                this.writer.write("+", null);
+                thirdArg.accept(this);
+            }
+            else {
+                target.accept(this);
+                this.writer.write("++", null);
+            }
+
+        }
+        else {
+            throw new Error("Invalid range");
+        }
+
+        this.writer.closeParen();
+        this.writer.beginBlock();
+        for (const stmt of body) {
+            stmt.accept(this);
+        }
+        this.writer.endBlock();
+    }
+
     /**
      * Generates a unique symbol name for the provided namespace.
      */
@@ -268,6 +343,9 @@ class Printer implements Visitor {
         this.writer.beginStatement();
         // TODO: Declaration.
         // TODO: How to deal with multiple target?
+        /**
+         * Decides whether to write let or not
+         */
         for (const target of assign.targets) {
             if (target instanceof Name) {
                 const flags: SymbolFlags = this.u.ste.symFlags[target.id.value];
@@ -284,6 +362,10 @@ class Printer implements Visitor {
                 }
             }
             target.accept(this);
+            if (assign.type) {
+                this.writer.write(":", null);
+                assign.type.accept(this);
+            }
         }
         this.writer.assign("=", assign.eqRange);
         assign.value.accept(this);
@@ -496,16 +578,25 @@ class Printer implements Visitor {
         this.writer.openParen();
         for (let i = 0; i < functionDef.args.args.length; i++) {
             const arg = functionDef.args.args[i];
+            const argType = arg.type;
             if (i === 0) {
-                if (arg.id.value === 'self') {
+                if (arg.name.id.value === 'self') {
                     // Ignore.
                 }
                 else {
-                    arg.accept(this);
+                    arg.name.accept(this);
+                    if (argType) {
+                        this.writer.write(":", null);
+                        argType.accept(this);
+                    }
                 }
             }
             else {
-                arg.accept(this);
+                arg.name.accept(this);
+                if (argType) {
+                    this.writer.write(":", null);
+                    argType.accept(this);
+                }
             }
         }
         this.writer.closeParen();
@@ -592,6 +683,15 @@ class Printer implements Visitor {
             }
             case 'str': {
                 this.writer.name('string', range);
+                break;
+            }
+            case 'num': {
+                this.writer.name('number', range);
+                break;
+            }
+            case 'dict': {
+                const testDict = "(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})";
+                this.writer.name(`${testDict}`, range);
                 break;
             }
             case 'bool': {

@@ -25,7 +25,7 @@
     "dependencies": {
         "code-writer": "^0.1.2",
         "generic-rbtree": "^1.1.1",
-        "typhon-lang": "^0.11.1"
+        "typhon-lang": "^0.12.3"
     },
     "scripts": {
         "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",
@@ -38,7 +38,7 @@
     "devDependencies": {
         "@types/jasmine": "^2.5.52",
         "concurrently": "^3.4.0",
-        "jasmine-core": "^2.6.3",
+        "jasmine-core": "2.6.3",
         "karma": "^1.7.0",
         "karma-chrome-launcher": "^2.1.1",
         "karma-cli": "^1.0.1",

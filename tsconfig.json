@@ -22,6 +22,7 @@
         "noUnusedParameters": false,
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
+        "sourceMap": true,
         "lib": [
             "es2015",
             "dom"

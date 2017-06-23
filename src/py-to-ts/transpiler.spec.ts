@@ -69,35 +69,47 @@ describe('transpiler', function () {
         });
     });
 
-    describe('Assign', function () {
-        it('should provide a declaration', function () {
-            const result = compile('x = 0.01');
-            expect(result.code).toBe("let x=0.01;");
+    describe("Assignments testing", function () {
+        describe('Assign', function () {
+            it('should provide a declaration', function () {
+                const result = compile('x = 0.01');
+                expect(result.code).toBe("let x=0.01;");
+            });
+            it('should provide a declaration', function () {
+                const sourceText = "the_world_is_flat = True";
+                const result = compile(sourceText);
+                expect(result.code).toBe("let the_world_is_flat=true;");
+            });
         });
-        it('should provide a declaration', function () {
-            const sourceText = "the_world_is_flat = True";
-            const result = compile(sourceText);
-            expect(result.code).toBe("let the_world_is_flat=true;");
+
+        describe('Assign', function () {
+            it('Integer', function () {
+                const result = compile('x = 1');
+                expect(typeof result).toBe('object');
+                expect(typeof result.code).toBe('string');
+                expect(result.code).toBe("let x=1;");
+            });
+        });
+
+        describe('Assign', function () {
+            it('String', function () {
+                const result = compile("name = 'David'");
+                expect(typeof result).toBe('object');
+                expect(typeof result.code).toBe('string');
+                expect(result.code).toBe("let name='David';");
+            });
+        });
+
+        describe("Type Assign", function () {
+            it('Should see type in result', function () {
+                const result = compile("name:str = 'David'");
+                expect(typeof result).toBe('object');
+                expect(typeof result.code).toBe('string');
+                expect(result.code).toBe("let name:string='David';");
+            });
         });
     });
 
-    describe('Assign', function () {
-        it('Integer', function () {
-            const result = compile('x = 1');
-            expect(typeof result).toBe('object');
-            expect(typeof result.code).toBe('string');
-            expect(result.code).toBe("let x=1;");
-        });
-    });
-
-    describe('Assign', function () {
-        it('String', function () {
-            const result = compile("name = 'David'");
-            expect(typeof result).toBe('object');
-            expect(typeof result.code).toBe('string');
-            expect(result.code).toBe("let name='David';");
-        });
-    });
 
     describe('Attribute', function () {
         it('should allow access to child attributes', function () {
@@ -217,6 +229,10 @@ describe('transpiler', function () {
             const result = compile('Engine()');
             expect(result.code).toBe("new Engine();");
         });
+        it("dict call should make use of runtime", function() {
+            const result = compile("dict(one=1)");
+            expect(result.code).toBe("(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})({one:1});");
+        });
     });
 
     describe('ClassDef', function () {
@@ -242,23 +258,23 @@ describe('transpiler', function () {
             // console.lg(JSON.stringify(result.sourceMap, null, 2));
         });
     });
-/*
-    class MyClass {
-        export f(name) {
-            function a (asdf) {
-                return 'Hello' + name;
+    /*
+        class MyClass {
+            export f(name) {
+                function a (asdf) {
+                    return 'Hello' + name;
+                }
             }
         }
-    }
 
-    class test {
-        f(name: any) {
-            function a(asdf: any) {
-                return 'Hello' + name;
+        class test {
+            f(name: any) {
+                function a(asdf: any) {
+                    return 'Hello' + name;
+                }
             }
         }
-    }
-*/
+    */
     describe('Dict', function () {
         it('should allow the empty dictionary', function () {
             const result = compile('{}');
@@ -278,6 +294,10 @@ describe('transpiler', function () {
             const result = compile(sourceText);
             expect(result.code).toBe("foo({test:4},{one:1,two:2,three:3});");
         });
+        it("should execute the IIFE dict when kw 'dict' is used", function() {
+            const result = compile("dict");
+            expect(result.code).toBe("(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;});");
+        })
     });
 
     describe('FunctionDef', function () {
@@ -289,13 +309,31 @@ describe('transpiler', function () {
             const result = compile(sourceText);
             expect(result.code).toBe("export function greeting(name){return 'Hello'+name;}");
         });
-        it("should work with a type", function () {
+        it("should work with a return type", function () {
             const sourceText = [
                 "def greeting(name) -> str:",
                 "   return 'Hello' + name"
             ].join("\n");
             const result = compile(sourceText);
             expect(result.code).toBe("export function greeting(name):string{return 'Hello'+name;}");
+        });
+        it("should work with an arg type", function () {
+            const sourceText = [
+                "def greeting(name:str) -> str:",
+                "   return 'Hello' + name"
+            ].join("\n");
+            const result = compile(sourceText);
+            expect(result.code).toBe("export function greeting(name:string):string{return 'Hello'+name;}");
+        });
+
+        it("print should convert to console.log", function () {
+            const sourceText = [
+                "print 123",
+                ""
+            ].join("\n");
+            const result = compile(sourceText);
+            console.log(result.code);
+            expect(result.code).toBe("console.log(123)");
         });
 
     });
@@ -312,6 +350,34 @@ describe('transpiler', function () {
         });
     });
 
+    describe("For statement", function () {
+        it("one parameter of range", function () {
+            const sourceText = [
+                "for x in range(0, 3):",
+                "   print \"We're on time\";"
+            ].join("\n");
+            const result = compile(sourceText);
+            expect(result.code).toBe("for(let x=0;x<3;x++){console.log(\"We're on time\")}");
+        });
+        it("two parameters of range", function () {
+            const sourceText = [
+                "for x in range(0, 3):",
+                "   print \"We're on time\";"
+            ].join("\n");
+            const result = compile(sourceText);
+            console.log(result.code);
+            expect(result.code).toBe("for(let x=0;x<3;x++){console.log(\"We're on time\")}");
+        });
+        it("three parameters of range", function () {
+            const sourceText = [
+                "for x in range(0, 3, 2):",
+                "   print \"We're on time\";"
+            ].join("\n");
+            const result = compile(sourceText);
+            console.log(result.code);
+            expect(result.code).toBe("for(let x=0;x<3;x=x+2){console.log(\"We're on time\")}");
+        });
+    });
     describe('ImportFrom', function () {
         it('Experiment', function () {
             const sourceText = [

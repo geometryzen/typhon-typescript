@@ -28,7 +28,7 @@ function isMethod(functionDef) {
     for (var i = 0; i < functionDef.args.args.length; i++) {
         if (i === 0) {
             var arg = functionDef.args.args[i];
-            if (arg.id.value === 'self') {
+            if (arg.name.id.value === 'self') {
                 return true;
             }
         }
@@ -39,3 +39,4 @@ function isMethod(functionDef) {
     return false;
 }
 exports.isMethod = isMethod;
+//# sourceMappingURL=utils.js.map

@@ -39,3 +39,4 @@ function interpolate(sourceLine, sourceColumn, sourceBegin, targetBegin) {
     var targetColumn = targetBegin.column + columnOffset;
     return new Position(targetLine, targetColumn);
 }
+//# sourceMappingURL=SourceMap.js.map
