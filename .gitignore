@@ -8,6 +8,8 @@ node_modules/
 
 test/
 
+src/py-to-ts-runtime
+
 # Ignore this log file which makes an appearance due to Google Chrome being used to inspect the Jasmine results.
 libpeerconnection.log
 

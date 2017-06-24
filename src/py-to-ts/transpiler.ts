@@ -1,5 +1,6 @@
 import { assert } from './asserts';
 import { Visitor } from 'typhon-lang';
+import { AnnAssign } from 'typhon-lang';
 import { Assign } from 'typhon-lang';
 import { Attribute } from 'typhon-lang';
 import { BinOp, Add, Sub, Mult, Div, BitOr, BitXor, BitAnd, LShift, RShift, FloorDiv, Mod } from 'typhon-lang';
@@ -259,31 +260,33 @@ class Printer implements Visitor {
         const target = fs.target;
         this.writer.write("for", null);
         this.writer.openParen();
-        console.log(range);
-
-        this.writer.beginStatement();
-
-        if (target instanceof Name) {
-            const flags: SymbolFlags = this.u.ste.symFlags[target.id.value];
-            if (flags && DEF_LOCAL) {
-                if (this.u.declared[target.id.value]) {
-                    // The variable has already been declared.
-                }
-                else {
-                    // We use let for now because we would need to look ahead for more assignments.
-                    // The smenatic analysis could count the number of assignments in the current scope?
-                    this.writer.write("let ", null);
-                    this.u.declared[target.id.value] = true;
-                }
-            }
-        }
-        target.accept(this);
-
-        this.writer.write("=", null);
 
         if (range instanceof Call) {
+            this.writer.beginStatement();
+
+            if (target instanceof Name) {
+                const flags: SymbolFlags = this.u.ste.symFlags[target.id.value];
+                if (flags && DEF_LOCAL) {
+                    if (this.u.declared[target.id.value]) {
+                        // The variable has already been declared.
+                    }
+                    else {
+                        // We use let for now because we would need to look ahead for more assignments.
+                        // The smenatic analysis could count the number of assignments in the current scope?
+                        this.writer.write("let ", null);
+                        this.u.declared[target.id.value] = true;
+                    }
+                }
+            }
+            target.accept(this);
+
+            this.writer.write("=", null);
+
             const secondArg = range.args[1];
             const thirdArg = range.args[2];
+            if (range.args[3]) {
+                throw new Error("Too many arguments");
+            }
             // range() accepts 1 or 2 parameters, if 1 then first param is always 0
             if (secondArg) {
                 const firstArg = range.args[0];
@@ -316,14 +319,40 @@ class Printer implements Visitor {
             }
 
         }
-        else {
-            throw new Error("Invalid range");
-        }
+        else if (range instanceof Name) {
+            // "for (" written so far
+            const greedyIterator = range.id.value; // The list to iterate over
+            this.writer.write("let ", null);
 
+            if (target instanceof Name) {
+                const flags: SymbolFlags = this.u.ste.symFlags[target.id.value];
+                if (flags && DEF_LOCAL) {
+                    if (this.u.declared[target.id.value]) {
+                        // The variable has already been declared.
+                    }
+                    else {
+                        // We use let for now because we would need to look ahead for more assignments.
+                        // The smenatic analysis could count the number of assignments in the current scope?
+                        this.writer.write("let ", null);
+                        this.u.declared[target.id.value] = true;
+                    }
+                }
+            }
+            target.accept(this);
+
+            this.writer.write(" of", null);
+            this.writer.write(` ${greedyIterator}`, null);
+        }
+        else {
+            console.log(range);
+            throw new Error(`Invalid range... range is instance of ${range.constructor.name}, not 'Call' or 'Name'`);
+        }
         this.writer.closeParen();
         this.writer.beginBlock();
         for (const stmt of body) {
+            this.writer.beginStatement();
             stmt.accept(this);
+            this.writer.endStatement();
         }
         this.writer.endBlock();
     }
@@ -339,6 +368,35 @@ class Printer implements Visitor {
     }
 
     // Everything below here is an implementation of the Visitor
+    annAssign(annassign: AnnAssign): void {
+        this.writer.beginStatement();
+        // TODO: Declaration.
+        // TODO: How to deal with multiple target?
+        /**
+         * Decides whether to write let or not
+         */
+        const target = annassign.target;
+        if (target instanceof Name) {
+            const flags: SymbolFlags = this.u.ste.symFlags[target.id.value];
+            if (flags && DEF_LOCAL) {
+                if (this.u.declared[target.id.value]) {
+                    // The variable has already been declared.
+                }
+                else {
+                    // We use let for now because we would need to look ahead for more assignments.
+                    // The smenatic analysis could count the number of assignments in the current scope?
+                    this.writer.write("let ", null);
+                    this.u.declared[target.id.value] = true;
+                }
+            }
+        }
+        target.accept(this);
+        if (annassign.value) {
+            this.writer.write(":", null);
+            annassign.value.accept(this);
+        }
+        this.writer.endStatement();
+    }
     assign(assign: Assign): void {
         this.writer.beginStatement();
         // TODO: Declaration.
@@ -689,11 +747,17 @@ class Printer implements Visitor {
                 this.writer.name('number', range);
                 break;
             }
+            case 'None': {
+                this.writer.name('null', range);
+                break;
+            }
+            /*
             case 'dict': {
                 const testDict = "(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})";
                 this.writer.name(`${testDict}`, range);
                 break;
             }
+            */
             case 'bool': {
                 this.writer.name('boolean', range);
                 break;

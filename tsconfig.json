@@ -31,5 +31,9 @@
     "include": [
         "src/**/*.ts"
     ],
+    "exclude": [
+        "src/py-to-ts-runtime/*.ts",
+        "src/py-to-ts-runtime/*.spec.ts"
+    ],
     "compileOnSave": false
 }

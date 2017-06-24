@@ -1,6 +1,6 @@
 {
     "name": "typhon-typescript",
-    "version": "0.2.3",
+    "version": "0.3.0",
     "description": "Typhon to TypeScript transpiler.",
     "author": {
         "name": "David Geo Holmes",
@@ -25,7 +25,7 @@
     "dependencies": {
         "code-writer": "^0.1.2",
         "generic-rbtree": "^1.1.1",
-        "typhon-lang": "^0.12.3"
+        "typhon-lang": "^0.12.9"
     },
     "scripts": {
         "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",

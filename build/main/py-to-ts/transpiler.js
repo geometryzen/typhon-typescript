@@ -145,27 +145,29 @@ var Printer = (function () {
         var target = fs.target;
         this.writer.write("for", null);
         this.writer.openParen();
-        console.log(range);
-        this.writer.beginStatement();
-        if (target instanceof typhon_lang_5.Name) {
-            var flags = this.u.ste.symFlags[target.id.value];
-            if (flags && typhon_lang_10.DEF_LOCAL) {
-                if (this.u.declared[target.id.value]) {
-                    // The variable has already been declared.
-                }
-                else {
-                    // We use let for now because we would need to look ahead for more assignments.
-                    // The smenatic analysis could count the number of assignments in the current scope?
-                    this.writer.write("let ", null);
-                    this.u.declared[target.id.value] = true;
+        if (range instanceof typhon_lang_3.Call) {
+            this.writer.beginStatement();
+            if (target instanceof typhon_lang_5.Name) {
+                var flags = this.u.ste.symFlags[target.id.value];
+                if (flags && typhon_lang_10.DEF_LOCAL) {
+                    if (this.u.declared[target.id.value]) {
+                        // The variable has already been declared.
+                    }
+                    else {
+                        // We use let for now because we would need to look ahead for more assignments.
+                        // The smenatic analysis could count the number of assignments in the current scope?
+                        this.writer.write("let ", null);
+                        this.u.declared[target.id.value] = true;
+                    }
                 }
             }
-        }
-        target.accept(this);
-        this.writer.write("=", null);
-        if (range instanceof typhon_lang_3.Call) {
+            target.accept(this);
+            this.writer.write("=", null);
             var secondArg = range.args[1];
             var thirdArg = range.args[2];
+            if (range.args[3]) {
+                throw new Error("Too many arguments");
+            }
             // range() accepts 1 or 2 parameters, if 1 then first param is always 0
             if (secondArg) {
                 var firstArg = range.args[0];
@@ -195,14 +197,39 @@ var Printer = (function () {
                 this.writer.write("++", null);
             }
         }
+        else if (range instanceof typhon_lang_5.Name) {
+            // "for (" written so far
+            var greedyIterator = range.id.value; // The list to iterate over
+            this.writer.write("let ", null);
+            if (target instanceof typhon_lang_5.Name) {
+                var flags = this.u.ste.symFlags[target.id.value];
+                if (flags && typhon_lang_10.DEF_LOCAL) {
+                    if (this.u.declared[target.id.value]) {
+                        // The variable has already been declared.
+                    }
+                    else {
+                        // We use let for now because we would need to look ahead for more assignments.
+                        // The smenatic analysis could count the number of assignments in the current scope?
+                        this.writer.write("let ", null);
+                        this.u.declared[target.id.value] = true;
+                    }
+                }
+            }
+            target.accept(this);
+            this.writer.write(" of", null);
+            this.writer.write(" " + greedyIterator, null);
+        }
         else {
-            throw new Error("Invalid range");
+            console.log(range);
+            throw new Error("Invalid range... range is instance of " + range.constructor.name + ", not 'Call' or 'Name'");
         }
         this.writer.closeParen();
         this.writer.beginBlock();
         for (var _i = 0, body_1 = body; _i < body_1.length; _i++) {
             var stmt = body_1[_i];
+            this.writer.beginStatement();
             stmt.accept(this);
+            this.writer.endStatement();
         }
         this.writer.endBlock();
     };
@@ -216,6 +243,35 @@ var Printer = (function () {
         return symbolName;
     };
     // Everything below here is an implementation of the Visitor
+    Printer.prototype.annAssign = function (annassign) {
+        this.writer.beginStatement();
+        // TODO: Declaration.
+        // TODO: How to deal with multiple target?
+        /**
+         * Decides whether to write let or not
+         */
+        var target = annassign.target;
+        if (target instanceof typhon_lang_5.Name) {
+            var flags = this.u.ste.symFlags[target.id.value];
+            if (flags && typhon_lang_10.DEF_LOCAL) {
+                if (this.u.declared[target.id.value]) {
+                    // The variable has already been declared.
+                }
+                else {
+                    // We use let for now because we would need to look ahead for more assignments.
+                    // The smenatic analysis could count the number of assignments in the current scope?
+                    this.writer.write("let ", null);
+                    this.u.declared[target.id.value] = true;
+                }
+            }
+        }
+        target.accept(this);
+        if (annassign.value) {
+            this.writer.write(":", null);
+            annassign.value.accept(this);
+        }
+        this.writer.endStatement();
+    };
     Printer.prototype.assign = function (assign) {
         this.writer.beginStatement();
         // TODO: Declaration.
@@ -571,11 +627,17 @@ var Printer = (function () {
                 this.writer.name('number', range);
                 break;
             }
-            case 'dict': {
-                var testDict = "(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})";
-                this.writer.name("" + testDict, range);
+            case 'None': {
+                this.writer.name('null', range);
                 break;
             }
+            /*
+            case 'dict': {
+                const testDict = "(function dict(...keys: dictVal[]):Dict {const dict1 = new Dict(keys); return dict1;})";
+                this.writer.name(`${testDict}`, range);
+                break;
+            }
+            */
             case 'bool': {
                 this.writer.name('boolean', range);
                 break;
