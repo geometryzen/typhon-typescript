@@ -28,10 +28,10 @@
         "typhon-lang": "^0.12.9"
     },
     "scripts": {
-        "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && yarn build:browser",
+        "build": "trash build && tsc -p tsconfig.main.json && tsc -p tsconfig.module.json && npm run build:browser",
         "build:browser": "rollup --config rollup.config.js --format umd --name \"typhonTypescript\" --output build/browser/index.js && sorcery -i build/browser/index.js",
         "lint": "tslint src/**/*.ts",
-        "test": "yarn lint && yarn unit && nyc check-coverage --lines 40 --functions 30 --branches 20",
+        "test": "npm run lint && npm run unit && nyc check-coverage --lines 40 --functions 30 --branches 20",
         "unit": "trash test && tsc -p tsconfig.json && karma start",
         "watch": "concurrently -r --kill-others \"tsc -p tsconfig.json -w\" \"karma start\""
     },

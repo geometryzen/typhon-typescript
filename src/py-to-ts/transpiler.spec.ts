@@ -340,7 +340,7 @@ describe('transpiler', function () {
                 ""
             ].join("\n");
             const result = compile(sourceText);
-            console.log(result.code);
+            // console.lg(result.code);
             expect(result.code).toBe("console.log(123)");
         });
 

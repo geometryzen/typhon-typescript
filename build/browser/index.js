@@ -85,7 +85,7 @@ function isMethod(functionDef) {
     return false;
 }
 
-var SourceMap = (function () {
+var SourceMap = /** @class */ (function () {
     function SourceMap(sourceToTarget, targetToSource) {
         this.sourceToTarget = sourceToTarget;
         this.targetToSource = targetToSource;
@@ -128,7 +128,7 @@ function interpolate(sourceLine, sourceColumn, sourceBegin, targetBegin) {
 /**
  * Provides enhanced scope information beyond the SymbolTableScope.
  */
-var PrinterUnit = (function () {
+var PrinterUnit = /** @class */ (function () {
     /**
      * Stuff that changes on entry/exit of code blocks. must be saved and restored
      * when returning to a block.
@@ -171,7 +171,7 @@ var PrinterUnit = (function () {
     };
     return PrinterUnit;
 }());
-var Printer = (function () {
+var Printer = /** @class */ (function () {
     /**
      *
      * @param st The symbol table obtained from semantic analysis.
@@ -187,15 +187,15 @@ var Printer = (function () {
         this.gensymCount = 0;
         // this.fileName = fileName;
         this.st = st;
-        this.flags = flags;
-        this.interactive = false;
-        this.nestlevel = 0;
+        // this.flags = flags;
+        // this.interactive = false;
+        // this.nestlevel = 0;
         this.u = null;
         this.stack = [];
         this.result = [];
         // this.gensymcount = 0;
         this.allUnits = [];
-        this.source = sourceText ? sourceText.split("\n") : false;
+        // this.source = sourceText ? sourceText.split("\n") : false;
         this.writer = new codeWriter.CodeWriter(beginLine, beginColumn, {}, trace);
     }
     /**
@@ -229,14 +229,14 @@ var Printer = (function () {
         u.scopename = scopeName;
         this.u = u;
         this.u.activateScope();
-        this.nestlevel++;
+        // this.nestlevel++;
         return scopeName;
     };
     Printer.prototype.exitScope = function () {
         if (this.u) {
             this.u.deactivateScope();
         }
-        this.nestlevel--;
+        // this.nestlevel--;
         if (this.stack.length - 1 >= 0) {
             this.u = this.stack.pop();
         }

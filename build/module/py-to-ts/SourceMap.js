@@ -1,5 +1,5 @@
 import { Position } from 'code-writer';
-var SourceMap = (function () {
+var SourceMap = /** @class */ (function () {
     function SourceMap(sourceToTarget, targetToSource) {
         this.sourceToTarget = sourceToTarget;
         this.targetToSource = targetToSource;

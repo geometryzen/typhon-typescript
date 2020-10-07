@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var code_writer_1 = require("code-writer");
-var SourceMap = (function () {
+var SourceMap = /** @class */ (function () {
     function SourceMap(sourceToTarget, targetToSource) {
         this.sourceToTarget = sourceToTarget;
         this.targetToSource = targetToSource;

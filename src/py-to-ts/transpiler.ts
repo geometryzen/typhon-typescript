@@ -133,18 +133,18 @@ class Printer implements Visitor {
     /**
      * Not being used (but being carried through).
      */
-    private flags: number;
+    // private flags: number;
     /**
      * Not being used. Default is false.
      */
-    private interactive: boolean;
+    // private interactive: boolean;
     /**
      * Incremented(Decremented) when entering(leaving) a scope.
      * Default is 0.
      * Not being used.
      * It seems a bit redundant because it can be obtained from the stack.length property.
      */
-    private nestlevel: number;
+    // private nestlevel: number;
     /**
      * Provides custom information about the current scope.
      * Default is null.
@@ -163,7 +163,7 @@ class Printer implements Visitor {
     /**
      * Used to provide comments referencing the original source in the transpiled code.
      */
-    private source: string[] | boolean;
+    // private source: string[] | boolean;
 
     /**
      * The output buffer.
@@ -183,15 +183,15 @@ class Printer implements Visitor {
     constructor(st: SymbolTable, flags: number, sourceText: string, private beginLine: number, private beginColumn: number, trace: boolean) {
         // this.fileName = fileName;
         this.st = st;
-        this.flags = flags;
-        this.interactive = false;
-        this.nestlevel = 0;
+        // this.flags = flags;
+        // this.interactive = false;
+        // this.nestlevel = 0;
         this.u = null;
         this.stack = [];
         this.result = [];
         // this.gensymcount = 0;
         this.allUnits = [];
-        this.source = sourceText ? sourceText.split("\n") : false;
+        // this.source = sourceText ? sourceText.split("\n") : false;
         this.writer = new CodeWriter(beginLine, beginColumn, {}, trace);
     }
 
@@ -233,7 +233,7 @@ class Printer implements Visitor {
         this.u = u;
         this.u.activateScope();
 
-        this.nestlevel++;
+        // this.nestlevel++;
 
         return scopeName;
     }
@@ -242,7 +242,7 @@ class Printer implements Visitor {
         if (this.u) {
             this.u.deactivateScope();
         }
-        this.nestlevel--;
+        // this.nestlevel--;
         if (this.stack.length - 1 >= 0) {
             this.u = this.stack.pop();
         }
@@ -344,7 +344,7 @@ class Printer implements Visitor {
             this.writer.write(` ${greedyIterator}`, null);
         }
         else {
-            console.log(range);
+            // console.lg(range);
             throw new Error(`Invalid range... range is instance of ${range.constructor.name}, not 'Call' or 'Name'`);
         }
         this.writer.closeParen();
