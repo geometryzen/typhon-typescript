@@ -1,39 +1,17 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "outDir": "test",
-        "rootDir": "src",
-        "moduleResolution": "node",
-        "module": "commonjs",
-        "declaration": false,
-        "importHelpers": true,
-        "inlineSourceMap": false,
-        "listFiles": false,
-        "traceResolution": false,
-        "pretty": true,
-        "strictNullChecks": false,
-        "forceConsistentCasingInFileNames": true,
-        "noFallthroughCasesInSwitch": false,
-        "noImplicitAny": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "noImplicitReturns": true,
-        "noImplicitThis": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": false,
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "sourceMap": true,
-        "lib": [
-            "es2015",
-            "dom"
-        ]
-    },
-    "include": [
-        "src/**/*.ts"
-    ],
-    "exclude": [
-        "src/py-to-ts-runtime/*.ts",
-        "src/py-to-ts-runtime/*.spec.ts"
-    ],
-    "compileOnSave": false
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "es6",
+    "sourceMap": true,
+    "outDir": "build",
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "declaration": true,
+    "declarationDir": "types",
+    "emitDeclarationOnly": true
+  }
 }

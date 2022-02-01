@@ -1,39 +1,61 @@
-import { assert } from './asserts';
-import { Visitor } from 'typhon-lang';
-import { AnnAssign } from 'typhon-lang';
-import { Assign } from 'typhon-lang';
-import { Attribute } from 'typhon-lang';
-import { BinOp, Add, Sub, Mult, Div, BitOr, BitXor, BitAnd, LShift, RShift, FloorDiv, Mod } from 'typhon-lang';
-import { Call } from 'typhon-lang';
-import { ClassDef } from 'typhon-lang';
-import { Compare, Eq, NotEq, Gt, GtE, Lt, LtE, In, NotIn, Is, IsNot } from 'typhon-lang';
-import { Dict } from 'typhon-lang';
-import { ExpressionStatement } from 'typhon-lang';
-import { ForStatement } from 'typhon-lang';
-import { FunctionDef } from 'typhon-lang';
-import { Name } from 'typhon-lang';
-import { IfStatement } from 'typhon-lang';
-import { ImportFrom } from 'typhon-lang';
-import { List } from 'typhon-lang';
-import { Module } from 'typhon-lang';
-import { Num } from 'typhon-lang';
-import { Print } from 'typhon-lang';
-import { ReturnStatement } from 'typhon-lang';
-import { Str } from 'typhon-lang';
-import { parse, SourceKind } from 'typhon-lang';
-import { astFromParse } from 'typhon-lang';
-import { semanticsOfModule } from 'typhon-lang';
-import { SymbolTable } from 'typhon-lang';
-import { SymbolTableScope } from 'typhon-lang';
-import { toStringLiteralJS } from './toStringLiteralJS';
-import { SymbolFlags } from 'typhon-lang';
-import { DEF_LOCAL } from 'typhon-lang';
-import { isClassNameByConvention, isMethod } from './utils';
-import { CodeWriter, TextAndMappings } from 'code-writer';
-import { MappingTree } from 'code-writer';
-import { Position, positionComparator } from 'code-writer';
+import { CodeWriter, MappingTree, Position, positionComparator, TextAndMappings } from 'code-writer';
 import { RBTree } from 'generic-rbtree';
+import {
+    Add,
+    AnnAssign,
+    Assign,
+    astFromParse,
+    Attribute,
+    BinOp,
+    BitAnd,
+    BitOr,
+    BitXor,
+    Call,
+    ClassDef,
+    Compare,
+    DEF_LOCAL,
+    Dict,
+    Div,
+    Eq,
+    ExpressionStatement,
+    FloorDiv,
+    ForStatement,
+    FunctionDef,
+    Gt,
+    GtE,
+    IfStatement,
+    ImportFrom,
+    In,
+    Is,
+    IsNot,
+    List,
+    LShift,
+    Lt,
+    LtE,
+    Mod,
+    Module,
+    Mult,
+    Name,
+    NotEq,
+    NotIn,
+    Num,
+    parse,
+    Print,
+    ReturnStatement,
+    RShift,
+    semanticsOfModule,
+    SourceKind,
+    Str,
+    Sub,
+    SymbolFlags,
+    SymbolTable,
+    SymbolTableScope,
+    Visitor
+} from 'typhon-lang';
+import { assert } from './asserts';
 import { SourceMap } from './SourceMap';
+import { toStringLiteralJS } from './toStringLiteralJS';
+import { isClassNameByConvention, isMethod } from './utils';
 /**
  * Provides enhanced scope information beyond the SymbolTableScope.
  */
@@ -56,7 +78,7 @@ class PrinterUnit {
     /**
      * TODO: What are these blocks?
      */
-    blocks: any[];
+    blocks: unknown[];
     curblock: number;
     /**
      * Used to determine whether a local variable has been declared.
@@ -149,13 +171,13 @@ class Printer implements Visitor {
      * Provides custom information about the current scope.
      * Default is null.
      */
-    private u: PrinterUnit;
+    private u: PrinterUnit | null | undefined;
     /**
      * Pushed(Popped) when entering(leaving) a scope.
      * Default is [].
      * Used to provide the compiler unit as scopes are popped.
      */
-    private stack: PrinterUnit[];
+    private stack: (PrinterUnit | null | undefined)[];
     /**
      * Pushed whenever we enter a cope, but never popped.
      */

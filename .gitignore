@@ -18,3 +18,9 @@ libpeerconnection.log
 
 # Ignore compiled Python files.
 **/*.pyc
+
+# Ignore generated types
+/types
+build/browser/types
+build/main/types
+build/module/types

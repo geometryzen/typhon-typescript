@@ -20,7 +20,7 @@ export function toStringLiteralJS(value: string): string {
             ret += '\\n';
         else if (c === '\r')
             ret += '\\r';
-        else if (c < ' ' || c as any >= 0x7f) {
+        else if (c < ' ' || c as unknown >= 0x7f) {
             let ashex = c.charCodeAt(0).toString(16);
             if (ashex.length < 2) ashex = "0" + ashex;
             ret += "\\x" + ashex;
