@@ -1,5 +1,26 @@
-import { RBTree } from 'generic-rbtree';
+import { RBTree, RBNode } from 'generic-rbtree';
 import { Position } from 'code-writer';
+
+function safeNodeEqual(a: RBNode<Position, Position>, b: RBNode<Position, Position>): boolean {
+    if (a && b) {
+        if (a.key.line === b.key.line && a.key.column === b.key.column) {
+            return true
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
+}
+
+function valueIfEqual(a: RBNode<Position, Position>, b: RBNode<Position, Position>): Position {
+    if (safeNodeEqual(a, b)) {
+        return a.value;
+    }
+    else {
+        return null;
+    }
+}
 
 export class SourceMap {
     constructor(private sourceToTarget: RBTree<Position, Position>, private targetToSource: RBTree<Position, Position>) {
@@ -8,33 +29,11 @@ export class SourceMap {
     getTargetPosition(sourcePos: Position): Position | null {
         const nodeL = this.sourceToTarget.glb(sourcePos);
         const nodeU = this.sourceToTarget.lub(sourcePos);
-        if (nodeL) {
-            if (nodeU) {
-                return interpolate(sourcePos.line, sourcePos.column, nodeL.key, nodeL.value);
-            }
-            else {
-                return null;
-            }
-        }
-        else {
-            return null;
-        }
+        return valueIfEqual(nodeL, nodeU);
     }
     getSourcePosition(targetPos: Position): Position {
         const nodeL = this.targetToSource.glb(targetPos);
-        if (nodeL) {
-            return interpolate(targetPos.line, targetPos.column, nodeL.key, nodeL.value);
-        }
-        else {
-            return null;
-        }
+        const nodeU = this.targetToSource.lub(targetPos);
+        return valueIfEqual(nodeL, nodeU);
     }
-}
-
-function interpolate(sourceLine: number, sourceColumn: number, sourceBegin: Position, targetBegin: Position): Position {
-    const lineOffset = sourceLine - sourceBegin.line;
-    const columnOffset = sourceColumn - sourceBegin.column;
-    const targetLine = targetBegin.line + lineOffset;
-    const targetColumn = targetBegin.column + columnOffset;
-    return new Position(targetLine, targetColumn);
 }

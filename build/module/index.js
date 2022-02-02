@@ -7825,6 +7825,27 @@ function assert(condition, message) {
     }
 }
 
+function safeNodeEqual(a, b) {
+    if (a && b) {
+        if (a.key.line === b.key.line && a.key.column === b.key.column) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        return false;
+    }
+}
+function valueIfEqual(a, b) {
+    if (safeNodeEqual(a, b)) {
+        return a.value;
+    }
+    else {
+        return null;
+    }
+}
 class SourceMap {
     constructor(sourceToTarget, targetToSource) {
         this.sourceToTarget = sourceToTarget;
@@ -7834,34 +7855,13 @@ class SourceMap {
     getTargetPosition(sourcePos) {
         const nodeL = this.sourceToTarget.glb(sourcePos);
         const nodeU = this.sourceToTarget.lub(sourcePos);
-        if (nodeL) {
-            if (nodeU) {
-                return interpolate(sourcePos.line, sourcePos.column, nodeL.key, nodeL.value);
-            }
-            else {
-                return null;
-            }
-        }
-        else {
-            return null;
-        }
+        return valueIfEqual(nodeL, nodeU);
     }
     getSourcePosition(targetPos) {
         const nodeL = this.targetToSource.glb(targetPos);
-        if (nodeL) {
-            return interpolate(targetPos.line, targetPos.column, nodeL.key, nodeL.value);
-        }
-        else {
-            return null;
-        }
+        const nodeU = this.targetToSource.lub(targetPos);
+        return valueIfEqual(nodeL, nodeU);
     }
-}
-function interpolate(sourceLine, sourceColumn, sourceBegin, targetBegin) {
-    const lineOffset = sourceLine - sourceBegin.line;
-    const columnOffset = sourceColumn - sourceBegin.column;
-    const targetLine = targetBegin.line + lineOffset;
-    const targetColumn = targetBegin.column + columnOffset;
-    return new Position$1(targetLine, targetColumn);
 }
 
 /**
@@ -8219,11 +8219,13 @@ class Printer {
         this.writer.str(attribute.attr.value, attribute.attr.range);
     }
     binOp(be) {
+        // console.lg(`Printer.binOp(be=${JSON.stringify(be)})`)
         be.lhs.accept(this);
         const op = be.op;
         const opRange = be.opRange;
         switch (op) {
             case Add: {
+                // console.lg(`opRange=>${opRange}`);
                 this.writer.binOp("+", opRange);
                 break;
             }
@@ -8504,6 +8506,7 @@ class Printer {
         }
     }
     name(name) {
+        // console.lg(`Printer.name(name=${JSON.stringify(name)})`)
         // TODO: Since 'True' and 'False' are reserved words in Python,
         // syntactic analysis (parsing) should be sufficient to identify
         // this name as a boolean expression - avoiding this overhead.
@@ -8576,6 +8579,7 @@ class Printer {
     }
 }
 function transpileModule(sourceText, trace = false) {
+    // console.lg(`transpileModule(sourceText=${JSON.stringify(sourceText)})`);
     const cst = parse(sourceText, SourceKind.File);
     if (typeof cst === 'object') {
         const stmts = astFromParse(cst);
@@ -8584,6 +8588,7 @@ function transpileModule(sourceText, trace = false) {
         const printer = new Printer(symbolTable, 0, sourceText, 1, 0, trace);
         const textAndMappings = printer.transpileModule(mod);
         const code = textAndMappings.text;
+        // console.lg(JSON.stringify(textAndMappings.tree, null, 2))
         const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, trace);
         return { code, sourceMap };
     }
@@ -8599,19 +8604,29 @@ function mappingTreeToSourceMap(mappingTree, trace) {
     const targetToSource = new RBTree(LO_KEY, HI_KEY, NIL_VALUE, positionComparator);
     if (mappingTree) {
         for (const mapping of mappingTree.mappings()) {
+            // console.lg(`mapping: ${JSON.stringify(mapping)}`);
             const source = mapping.source;
             const target = mapping.target;
-            // Convert to immutable values for targets.
-            const tBegin = new Position$1(target.begin.line, target.begin.column);
-            const tEnd = new Position$1(target.end.line, target.end.column);
-            if (trace) {
-                console.log(`${source.begin} => ${tBegin}`);
-                console.log(`${source.end} => ${tEnd}`);
+            const sourceLength = source.end.column - source.begin.column;
+            const targetLength = target.end.column - target.begin.column;
+            if (sourceLength === targetLength) {
+                for (let i = 0; i < sourceLength; i++) {
+                    const sourcePoint = new Position$1(source.begin.line, source.begin.column + i);
+                    const targetPoint = new Position$1(target.begin.line, target.begin.column + i);
+                    if (trace) {
+                        console.log(`source ${JSON.stringify(sourcePoint)} => target ${targetPoint}`);
+                    }
+                    sourceToTarget.insert(sourcePoint, targetPoint);
+                    targetToSource.insert(targetPoint, sourcePoint);
+                }
             }
-            sourceToTarget.insert(source.begin, tBegin);
-            sourceToTarget.insert(source.end, tEnd);
-            targetToSource.insert(tBegin, source.begin);
-            targetToSource.insert(tEnd, source.end);
+            else {
+                if (sourceLength > 0 && targetLength > 0) ;
+                else {
+                    // TODO: Why do we have negative numbers?
+                    console.warn(`Why negative numbers?`);
+                }
+            }
         }
     }
     return new SourceMap(sourceToTarget, targetToSource);

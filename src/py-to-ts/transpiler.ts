@@ -457,11 +457,13 @@ class Printer implements Visitor {
         this.writer.str(attribute.attr.value, attribute.attr.range);
     }
     binOp(be: BinOp): void {
+        // console.lg(`Printer.binOp(be=${JSON.stringify(be)})`)
         be.lhs.accept(this);
         const op = be.op;
         const opRange = be.opRange;
         switch (op) {
             case Add: {
+                // console.lg(`opRange=>${opRange}`);
                 this.writer.binOp("+", opRange);
                 break;
             }
@@ -747,6 +749,7 @@ class Printer implements Visitor {
         }
     }
     name(name: Name): void {
+        // console.lg(`Printer.name(name=${JSON.stringify(name)})`)
         // TODO: Since 'True' and 'False' are reserved words in Python,
         // syntactic analysis (parsing) should be sufficient to identify
         // this name as a boolean expression - avoiding this overhead.
@@ -820,6 +823,7 @@ class Printer implements Visitor {
 }
 
 export function transpileModule(sourceText: string, trace = false): { code: string; sourceMap: SourceMap; } {
+    // console.lg(`transpileModule(sourceText=${JSON.stringify(sourceText)})`);
     const cst = parse(sourceText, SourceKind.File);
     if (typeof cst === 'object') {
         const stmts = astFromParse(cst);
@@ -828,6 +832,7 @@ export function transpileModule(sourceText: string, trace = false): { code: stri
         const printer = new Printer(symbolTable, 0, sourceText, 1, 0, trace);
         const textAndMappings = printer.transpileModule(mod);
         const code = textAndMappings.text;
+        // console.lg(JSON.stringify(textAndMappings.tree, null, 2))
         const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, trace);
         return { code, sourceMap };
     }
@@ -840,24 +845,34 @@ const NIL_VALUE = new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
 const HI_KEY = new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
 const LO_KEY = new Position(Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
 
-function mappingTreeToSourceMap(mappingTree: MappingTree, trace: boolean): SourceMap {
+export function mappingTreeToSourceMap(mappingTree: MappingTree, trace: boolean): SourceMap {
     const sourceToTarget = new RBTree<Position, Position>(LO_KEY, HI_KEY, NIL_VALUE, positionComparator);
     const targetToSource = new RBTree<Position, Position>(LO_KEY, HI_KEY, NIL_VALUE, positionComparator);
     if (mappingTree) {
         for (const mapping of mappingTree.mappings()) {
+            // console.lg(`mapping: ${JSON.stringify(mapping)}`);
             const source = mapping.source;
             const target = mapping.target;
-            // Convert to immutable values for targets.
-            const tBegin = new Position(target.begin.line, target.begin.column);
-            const tEnd = new Position(target.end.line, target.end.column);
-            if (trace) {
-                console.log(`${source.begin} => ${tBegin}`);
-                console.log(`${source.end} => ${tEnd}`);
+            const sourceLength = source.end.column - source.begin.column;
+            const targetLength = target.end.column - target.begin.column;
+            if (sourceLength === targetLength) {
+                for (let i = 0; i < sourceLength; i++) {
+                    const sourcePoint = new Position(source.begin.line, source.begin.column + i);
+                    const targetPoint = new Position(target.begin.line, target.begin.column + i);
+                    if (trace) {
+                        console.log(`source ${JSON.stringify(sourcePoint)} => target ${targetPoint}`);
+                    }
+                    sourceToTarget.insert(sourcePoint, targetPoint);
+                    targetToSource.insert(targetPoint, sourcePoint);
+                }
+            } else {
+                if (sourceLength > 0 && targetLength > 0) {
+                    // Ignore. We are only interested in mapping symbols that have the same length.
+                } else {
+                    // TODO: Why do we have negative numbers?
+                    console.warn(`Why negative numbers?`)
+                }
             }
-            sourceToTarget.insert(source.begin, tBegin);
-            sourceToTarget.insert(source.end, tEnd);
-            targetToSource.insert(tBegin, source.begin);
-            targetToSource.insert(tEnd, source.end);
         }
     }
     return new SourceMap(sourceToTarget, targetToSource);
