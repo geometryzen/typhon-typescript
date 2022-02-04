@@ -5,7 +5,8 @@ coverage/
 
 # Ignore tools dependencies
 node_modules/
-
+build/
+docs/
 test/
 
 src/py-to-ts-runtime
