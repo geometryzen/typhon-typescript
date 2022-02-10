@@ -1,6 +1,6 @@
 {
     "name": "typhon-typescript",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "description": "Typhon to TypeScript transpiler.",
     "browser": "build/browser/index.js",
     "main": "build/main/index.js",
@@ -35,7 +35,7 @@
     "dependencies": {
         "code-writer": "^0.1.2",
         "generic-rbtree": "^1.1.2",
-        "typhon-lang": "^1.0.4"
+        "typhon-lang": "^1.0.6"
     },
     "devDependencies": {
         "@istanbuljs/nyc-config-typescript": "^1.0.2",
