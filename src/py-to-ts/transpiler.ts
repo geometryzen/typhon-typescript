@@ -4,6 +4,8 @@ import {
     Add,
     AnnAssign,
     Assign,
+    astDump,
+    astFromExpression,
     astFromParse,
     Attribute,
     BinOp,
@@ -17,6 +19,7 @@ import {
     Dict,
     Div,
     Eq,
+    Expression,
     ExpressionStatement,
     FloorDiv,
     ForStatement,
@@ -39,7 +42,9 @@ import {
     NotEq,
     NotIn,
     Num,
+    Operator,
     parse,
+    Pow,
     Print,
     ReturnStatement,
     RShift,
@@ -56,6 +61,7 @@ import { assert } from './asserts';
 import { SourceMap } from './SourceMap';
 import { toStringLiteralJS } from './toStringLiteralJS';
 import { isClassNameByConvention, isMethod } from './utils';
+import { compareOperators, isLeftToRight } from './precedence';
 /**
  * Provides enhanced scope information beyond the SymbolTableScope.
  */
@@ -177,7 +183,15 @@ class Printer implements Visitor {
      * Default is [].
      * Used to provide the compiler unit as scopes are popped.
      */
-    private stack: (PrinterUnit | null | undefined)[];
+    private readonly scopes: (PrinterUnit | null | undefined)[] = [];
+    /**
+     * Maintain a stack of operators so that we can use precedence rules to minimize parenthesis.
+     */
+    private readonly ops: Operator[] = [];
+    /**
+     * Keeps track of whether we are going down the lhs or rhs of a binary operator.
+     */
+    private readonly sides: ('lhs' | 'rhs')[] = [];
     /**
      * Pushed whenever we enter a cope, but never popped.
      */
@@ -209,12 +223,17 @@ class Printer implements Visitor {
         // this.interactive = false;
         // this.nestlevel = 0;
         this.u = null;
-        this.stack = [];
+        // this.scopes = [];
         this.result = [];
         // this.gensymcount = 0;
         this.allUnits = [];
         // this.source = sourceText ? sourceText.split("\n") : false;
         this.writer = new CodeWriter(beginLine, beginColumn, {}, trace);
+    }
+
+    transpileExpression(expression: Expression): TextAndMappings {
+        expression.accept(this);
+        return this.writer.snapshot();
     }
 
     /**
@@ -247,7 +266,7 @@ class Printer implements Visitor {
             u.private_ = this.u.private_;
         }
 
-        this.stack.push(this.u);
+        this.scopes.push(this.u);
         this.allUnits.push(u);
         const scopeName = this.gensym('scope');
         u.scopename = scopeName;
@@ -265,8 +284,8 @@ class Printer implements Visitor {
             this.u.deactivateScope();
         }
         // this.nestlevel--;
-        if (this.stack.length - 1 >= 0) {
-            this.u = this.stack.pop();
+        if (this.scopes.length - 1 >= 0) {
+            this.u = this.scopes.pop();
         }
         else {
             this.u = null;
@@ -458,62 +477,124 @@ class Printer implements Visitor {
     }
     binOp(be: BinOp): void {
         // console.lg(`Printer.binOp(be=${JSON.stringify(be)})`)
-        be.lhs.accept(this);
+        // TODO: Writing parens around everything is probably safe but redundant.
+        // How do we minimize?
         const op = be.op;
-        const opRange = be.opRange;
-        switch (op) {
-            case Add: {
-                // console.lg(`opRange=>${opRange}`);
-                this.writer.binOp("+", opRange);
-                break;
-            }
-            case Sub: {
-                this.writer.binOp("-", opRange);
-                break;
-            }
-            case Mult: {
-                this.writer.binOp("*", opRange);
-                break;
-            }
-            case Div: {
-                this.writer.binOp("/", opRange);
-                break;
-            }
-            case BitOr: {
-                this.writer.binOp("|", opRange);
-                break;
-            }
-            case BitXor: {
-                this.writer.binOp("^", opRange);
-                break;
-            }
-            case BitAnd: {
-                this.writer.binOp("&", opRange);
-                break;
-            }
-            case LShift: {
-                this.writer.binOp("<<", opRange);
-                break;
-            }
-            case RShift: {
-                this.writer.binOp(">>", opRange);
-                break;
-            }
-            case Mod: {
-                this.writer.binOp("%", opRange);
-                break;
-            }
-            case FloorDiv: {
-                // TODO: What is the best way to handle FloorDiv.
-                // This doesn't actually exist in TypeScript.
-                this.writer.binOp("//", opRange);
-                break;
-            }
-            default: {
-                throw new Error(`Unexpected binary operator ${op}: ${typeof op}`);
+        let closeParenNeeded = false;
+        if (this.ops.length > 0) {
+            // We may need parenthesis.
+            const enclosing = this.ops.pop();
+            this.ops.push(enclosing);
+            const comp = compareOperators(enclosing, op);
+            switch (comp) {
+                case +1: {
+                    // Parentheses needed because outer operator has higher precedence. 
+                    this.writer.openParen();
+                    closeParenNeeded = true;
+                    break;
+                }
+                case 0: {
+                    if (this.sides.length) {
+                        const side = this.sides.pop();
+                        this.sides.push(side);
+                        if (side === 'rhs' && isLeftToRight(op)) {
+                            this.writer.openParen();
+                            closeParenNeeded = true;
+                        }
+                        // TODO: If the other way around...
+                    }
+                    break;
+                }
+                default: {
+                    if (comp !== -1) {
+                        throw new Error(`compareOperators(${enclosing}, ${op}) should return either +1, 0, or -1.`);
+                    }
+                    // No parentheses needed because op binds more tightly than enclosing.
+                }
             }
         }
-        be.rhs.accept(this);
+        this.ops.push(op);
+        try {
+            this.sides.push('lhs');
+            try {
+                be.lhs.accept(this);
+            }
+            finally {
+                this.sides.pop();
+            }
+            const opRange = be.opRange;
+            switch (op) {
+                case Add: {
+                    this.writer.binOp("+", opRange);
+                    break;
+                }
+                case Sub: {
+                    this.writer.binOp("-", opRange);
+                    break;
+                }
+                case Mult: {
+                    this.writer.binOp("*", opRange);
+                    break;
+                }
+                case Div: {
+                    this.writer.binOp("/", opRange);
+                    break;
+                }
+                case BitOr: {
+                    this.writer.binOp("|", opRange);
+                    break;
+                }
+                case BitXor: {
+                    this.writer.binOp("^", opRange);
+                    break;
+                }
+                case BitAnd: {
+                    this.writer.binOp("&", opRange);
+                    break;
+                }
+                case LShift: {
+                    this.writer.binOp("<<", opRange);
+                    break;
+                }
+                case RShift: {
+                    this.writer.binOp(">>", opRange);
+                    break;
+                }
+                case Mod: {
+                    this.writer.binOp("%", opRange);
+                    break;
+                }
+                case Pow: {
+                    // Getting null for the opRange.
+                    console.log(`** oRange=>${JSON.stringify(opRange, null, 2)}`);
+                    this.writer.binOp("**", opRange);
+                    break;
+                }
+                case FloorDiv: {
+                    // TODO: What is the best way to handle FloorDiv.
+                    // This doesn't actually exist in TypeScript.
+                    this.writer.binOp("//", opRange);
+                    break;
+                }
+                default: {
+                    throw new Error(`Unexpected binary operator ${op}: ${typeof op}`);
+                }
+            }
+            this.sides.push('rhs');
+            try {
+                be.rhs.accept(this);
+            }
+            finally {
+                this.sides.pop();
+            }
+        }
+        finally {
+            this.ops.pop();
+        }
+
+        if (closeParenNeeded) {
+            this.writer.closeParen();
+        }
     }
     callExpression(ce: Call): void {
         if (ce.func instanceof Name) {
@@ -822,18 +903,38 @@ class Printer implements Visitor {
     }
 }
 
-export function transpileModule(sourceText: string, trace = false): { code: string; sourceMap: SourceMap; } {
+export function transpileExpression(sourceText: string): { code: string; sourceMap: SourceMap; } {
+    // console.lg(`transpileExpression(sourceText=${JSON.stringify(sourceText)})`);
+    const cst = parse(sourceText, SourceKind.Eval);
+    if (typeof cst === 'object') {
+        const testlist = cst.children[0];
+        const ifExpr = testlist.children[0];
+        const expression = astFromExpression(ifExpr);
+        const symbolTable = new SymbolTable();
+        const printer = new Printer(symbolTable, 0, sourceText, 1, 0, false);
+        const textAndMappings = printer.transpileExpression(expression);
+        const code = textAndMappings.text;
+        // console.lg(JSON.stringify(textAndMappings.tree, null, 2))
+        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, false);
+        return { code, sourceMap };
+    }
+    else {
+        throw new Error(`Error parsing source for file.`);
+    }
+}
+
+export function transpileModule(sourceText: string): { code: string; sourceMap: SourceMap; } {
     // console.lg(`transpileModule(sourceText=${JSON.stringify(sourceText)})`);
     const cst = parse(sourceText, SourceKind.File);
     if (typeof cst === 'object') {
         const stmts = astFromParse(cst);
         const mod = new Module(stmts);
         const symbolTable = semanticsOfModule(mod);
-        const printer = new Printer(symbolTable, 0, sourceText, 1, 0, trace);
+        const printer = new Printer(symbolTable, 0, sourceText, 1, 0, false);
         const textAndMappings = printer.transpileModule(mod);
         const code = textAndMappings.text;
         // console.lg(JSON.stringify(textAndMappings.tree, null, 2))
-        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, trace);
+        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, false);
         return { code, sourceMap };
     }
     else {
@@ -860,7 +961,7 @@ export function mappingTreeToSourceMap(mappingTree: MappingTree, trace: boolean)
                     const sourcePoint = new Position(source.begin.line, source.begin.column + i);
                     const targetPoint = new Position(target.begin.line, target.begin.column + i);
                     if (trace) {
-                        console.log(`source ${JSON.stringify(sourcePoint)} => target ${targetPoint}`);
+                        // console.lg(`source ${JSON.stringify(sourcePoint)} => target ${targetPoint}`);
                     }
                     sourceToTarget.insert(sourcePoint, targetPoint);
                     targetToSource.insert(targetPoint, sourcePoint);
