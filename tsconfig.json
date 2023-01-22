@@ -1,17 +1,18 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "module": "es6",
-    "sourceMap": true,
-    "outDir": "build",
-    "strict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "strictNullChecks": false,
-    "declaration": true,
-    "declarationDir": "types",
-    "emitDeclarationOnly": true
-  }
+    "compilerOptions": {
+        "target": "esnext",
+        "module": "esnext",
+        "sourceMap": true,
+        "outDir": "build",
+        "strict": true,
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "skipLibCheck": true,
+        "strictNullChecks": false,
+        "declaration": true,
+        "declarationDir": "types",
+        "emitDeclarationOnly": true,
+        "resolveJsonModule": true
+    }
 }

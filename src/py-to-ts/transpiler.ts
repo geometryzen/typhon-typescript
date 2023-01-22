@@ -28,6 +28,7 @@ import {
     IfStatement,
     ImportFrom,
     In,
+    Invert,
     Is,
     IsNot,
     List,
@@ -38,6 +39,7 @@ import {
     Module,
     Mult,
     Name,
+    Not,
     NotEq,
     NotIn,
     Num,
@@ -54,13 +56,16 @@ import {
     SymbolFlags,
     SymbolTable,
     SymbolTableScope,
+    UAdd,
+    UnaryOp,
+    USub,
     Visitor
 } from 'typhon-lang';
 import { assert } from './asserts';
+import { compareOperators, isLeftToRight } from './precedence';
 import { SourceMap } from './SourceMap';
 import { toStringLiteralJS } from './toStringLiteralJS';
 import { isClassNameByConvention, isMethod } from './utils';
-import { compareOperators, isLeftToRight } from './precedence';
 /**
  * Provides enhanced scope information beyond the SymbolTableScope.
  */
@@ -215,7 +220,7 @@ class Printer implements Visitor {
      * @param flags Not being used yet. May become options.
      * @param sourceText The original source code, provided for annotating the generated code and source mapping.
      */
-    constructor(st: SymbolTable, flags: number, sourceText: string, private beginLine: number, private beginColumn: number, trace: boolean) {
+    constructor(st: SymbolTable, flags: number, sourceText: string, private beginLine: number, private beginColumn: number) {
         // this.fileName = fileName;
         this.st = st;
         // this.flags = flags;
@@ -227,7 +232,7 @@ class Printer implements Visitor {
         // this.gensymcount = 0;
         this.allUnits = [];
         // this.source = sourceText ? sourceText.split("\n") : false;
-        this.writer = new CodeWriter(beginLine, beginColumn, {}, trace);
+        this.writer = new CodeWriter(beginLine, beginColumn, {});
     }
 
     transpileExpression(expression: Expression): TextAndMappings {
@@ -564,8 +569,6 @@ class Printer implements Visitor {
                     break;
                 }
                 case Pow: {
-                    // Getting null for the opRange.
-                    console.log(`** oRange=>${JSON.stringify(opRange, null, 2)}`);
                     this.writer.binOp("**", opRange);
                     break;
                 }
@@ -900,6 +903,27 @@ class Printer implements Visitor {
         // const end = str.end;
         this.writer.str(toStringLiteralJS(s.value), s.range);
     }
+    unaryOp(unaryExpr: UnaryOp): void {
+        switch (unaryExpr.op) {
+            case UAdd: {
+                this.writer.unaryOp('+', unaryExpr.range);
+                break;
+            }
+            case USub: {
+                this.writer.unaryOp('-', unaryExpr.range);
+                break;
+            }
+            case Invert: {
+                this.writer.unaryOp('~', unaryExpr.range);
+                break;
+            }
+            case Not: {
+                this.writer.unaryOp('!', unaryExpr.range);
+                break;
+            }
+        }
+        unaryExpr.operand.accept(this);
+    }
 }
 
 export function transpileExpression(sourceText: string): { code: string; sourceMap: SourceMap; } {
@@ -910,11 +934,11 @@ export function transpileExpression(sourceText: string): { code: string; sourceM
         const ifExpr = testlist.children[0];
         const expression = astFromExpression(ifExpr);
         const symbolTable = new SymbolTable();
-        const printer = new Printer(symbolTable, 0, sourceText, 1, 0, false);
+        const printer = new Printer(symbolTable, 0, sourceText, 1, 0);
         const textAndMappings = printer.transpileExpression(expression);
         const code = textAndMappings.text;
         // console.lg(JSON.stringify(textAndMappings.tree, null, 2))
-        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, false);
+        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree);
         return { code, sourceMap };
     }
     else {
@@ -929,11 +953,11 @@ export function transpileModule(sourceText: string): { code: string; sourceMap: 
         const stmts = astFromParse(cst);
         const mod = new Module(stmts);
         const symbolTable = semanticsOfModule(mod);
-        const printer = new Printer(symbolTable, 0, sourceText, 1, 0, false);
+        const printer = new Printer(symbolTable, 0, sourceText, 1, 0);
         const textAndMappings = printer.transpileModule(mod);
         const code = textAndMappings.text;
         // console.lg(JSON.stringify(textAndMappings.tree, null, 2))
-        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree, false);
+        const sourceMap = mappingTreeToSourceMap(textAndMappings.tree);
         return { code, sourceMap };
     }
     else {
@@ -945,7 +969,7 @@ const NIL_VALUE = new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
 const HI_KEY = new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
 const LO_KEY = new Position(Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER);
 
-export function mappingTreeToSourceMap(mappingTree: MappingTree, trace: boolean): SourceMap {
+export function mappingTreeToSourceMap(mappingTree: MappingTree): SourceMap {
     const sourceToTarget = new RBTree<Position, Position>(LO_KEY, HI_KEY, NIL_VALUE, positionComparator);
     const targetToSource = new RBTree<Position, Position>(LO_KEY, HI_KEY, NIL_VALUE, positionComparator);
     if (mappingTree) {
@@ -959,9 +983,6 @@ export function mappingTreeToSourceMap(mappingTree: MappingTree, trace: boolean)
                 for (let i = 0; i < sourceLength; i++) {
                     const sourcePoint = new Position(source.begin.line, source.begin.column + i);
                     const targetPoint = new Position(target.begin.line, target.begin.column + i);
-                    if (trace) {
-                        // console.lg(`source ${JSON.stringify(sourcePoint)} => target ${targetPoint}`);
-                    }
                     sourceToTarget.insert(sourcePoint, targetPoint);
                     targetToSource.insert(targetPoint, sourcePoint);
                 }

@@ -1,11 +1,10 @@
-import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-// import { terser } from 'rollup-plugin-terser';
-import external from 'rollup-plugin-peer-deps-external';
 import dts from 'rollup-plugin-dts';
+// import { terser } from 'rollup-plugin-terser';
+import packageJson from './package.json' assert { type: 'json' };
 
-const packageJson = require('./package.json');
 
 export default [
     {
@@ -30,7 +29,6 @@ export default [
             }
         ],
         plugins: [
-            external(),
             resolve(),
             commonjs(),
             typescript({ tsconfig: './tsconfig.json' }),
