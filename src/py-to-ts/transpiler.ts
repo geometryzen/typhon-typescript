@@ -53,6 +53,7 @@ import {
     SourceKind,
     Str,
     Sub,
+    Subscript,
     SymbolFlags,
     SymbolTable,
     SymbolTableScope,
@@ -233,6 +234,11 @@ class Printer implements Visitor {
         this.allUnits = [];
         // this.source = sourceText ? sourceText.split("\n") : false;
         this.writer = new CodeWriter(beginLine, beginColumn, {});
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    subscript(se: Subscript): void {
+        // Use the writer ...
+        throw new Error('Printer.subscript method not implemented.');
     }
 
     transpileExpression(expression: Expression): TextAndMappings {
